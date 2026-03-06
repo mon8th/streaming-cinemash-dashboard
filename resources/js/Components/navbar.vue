@@ -1,13 +1,14 @@
 <script setup>
-import { Link } from '@inertiajs/vue3';
+import { Link, router, usePage } from '@inertiajs/vue3';
 import search from '@/Components/icons/search.vue';
+import { computed } from 'vue';
 
-defineProps({
-    user: {
-        type: String,
-        default: 'admin'
-    }
-})
+const page = usePage();
+const user = computed(() => page.props.auth.user);
+
+const logout = () => {
+    router.post('/logout');
+};
 </script>
 
 <template>
@@ -23,11 +24,14 @@ defineProps({
 
         <div class="flex items-center gap-3">
             <Link href="/profile" class="flex items-center gap-3 px-3 py-2 hover:bg-slate-700 rounded-lg transition-colors">
-                <span class="text-sm text-slate-300">{{ user }}</span>
+                <span class="text-sm text-slate-300">{{ user?.name || 'Admin' }}</span>
                 <div class="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center text-white font-semibold">
-                    {{ user.charAt(0).toUpperCase() }}
+                    {{ user?.name?.charAt(0).toUpperCase() || 'A' }}
                 </div>
             </Link>
+            <button @click="logout" class="px-4 py-2 text-sm text-slate-300 hover:text-white hover:bg-slate-700 rounded-lg transition-colors">
+                Logout
+            </button>
         </div>
     </header>
 </template>
