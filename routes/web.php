@@ -2,10 +2,9 @@
 
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+use App\Http\Controllers\DashboardController;
 
-Route::get('/', function () {
-    return Inertia::render('index');
-});
+Route::get('/', [DashboardController::class, 'index']);
 
 // Route::inertia('/about', 'About', ['user' => 'mon']);
 
