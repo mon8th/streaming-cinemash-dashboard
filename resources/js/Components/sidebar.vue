@@ -32,13 +32,7 @@ import profile from '@/Components/icons/profile.vue';
                 <div class="w-5 h-5 shrink-0">
                     <streaming />
                 </div>
-                <span class="font-medium">Streaming</span>
-            </Link>
-            <Link href="/profile" :class="$page.url === '/profile' ? 'flex items-center gap-3 px-3 py-2.5 text-purple-400 bg-purple-500/15 rounded-lg transition-colors' : 'flex items-center gap-3 px-3 py-2.5 text-slate-400 hover:bg-slate-700 hover:text-white rounded-lg transition-colors'">
-                <div class="w-5 h-5 shrink-0">
-                    <profile />
-                </div>
-                <span class="font-medium">Profile</span>
+                <span class="font-medium">Movies</span>
             </Link>
         </nav>
     </aside>
