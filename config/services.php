@@ -29,7 +29,7 @@ return [
     ],
 
     'slack' => [
-        'notifications' => [
+        'notifici ations' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),
             'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
@@ -37,5 +37,9 @@ return [
 
     'tmdb' => [
         'api_key' => env('TMDB_API_KEY'),
+    ],
+
+    'cinemesh_core' => [
+        'base_url' => env('CINEMESH_CORE_API'),
     ],
 ];

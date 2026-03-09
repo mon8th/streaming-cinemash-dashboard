@@ -18,7 +18,6 @@ const logout = () => {
                 <div class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4 pointer-events-none">
                     <search />
                 </div>
-                <input type="text" placeholder="Search..." class="w-80 bg-slate-900/50 border border-slate-600 rounded-lg pl-10 pr-4 py-3 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500">
             </div>
         </div>
 

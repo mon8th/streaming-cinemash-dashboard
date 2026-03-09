@@ -19,8 +19,10 @@ class SyncMovies extends Command
         $page = 1;
 
         do {
-            $res = Http::get('http://47.129.2.187/api/public/movies', [
-                'page' => $page, 'limit' => 100
+            $baseUrl = rtrim(config('services.cinemesh_core.base_url'), '/');
+            $res = Http::get($baseUrl . '/movies', [
+                'page' => $page,
+                'limit' => 100
             ])->json();
 
             foreach ($res['data'] as $m) {
