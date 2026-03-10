@@ -43,4 +43,11 @@ class MovieController extends Controller
         ]);
         return response()->json($provider);
     }
+
+    public function deleteProvider($id)
+    {
+        $provider = StreamingProvider::findOrFail($id);
+        $provider->delete();
+        return response()->json(['success' => true]);
+    }
 }

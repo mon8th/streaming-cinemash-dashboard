@@ -14,11 +14,6 @@ const logout = () => {
 <template>
     <header class="h-15 bg-slate-800 border-b border-slate-700 flex items-center justify-between px-6">
         <div class="flex items-center gap-4">
-            <div class="relative">
-                <div class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4 pointer-events-none">
-                    <search />
-                </div>
-            </div>
         </div>
 
         <div class="flex items-center gap-3">

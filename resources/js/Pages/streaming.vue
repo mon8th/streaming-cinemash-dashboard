@@ -91,6 +91,21 @@ async function saveNewProvider() {
 function cancelAddForm() {
     showAddForm.value = false
 }
+
+async function deleteProvider(provider) {
+    if (!confirm(`Delete ${provider.provider_name}?`)) return
+
+    try {
+        await axios.delete(`/api/streaming-providers/${provider.id}`)
+        const index = selected.value.streaming_providers.findIndex(p => p.id === provider.id)
+        if (index > -1) {
+            selected.value.streaming_providers.splice(index, 1)
+        }
+    } catch (error) {
+        console.error('Failed to delete provider:', error)
+        alert('Failed to delete provider')
+    }
+}
 </script>
 
 <template>
@@ -113,13 +128,13 @@ function cancelAddForm() {
         <!-- Modal -->
         <div v-if="selected" class="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-6"
             @click.self="selected = null">
-            <div class="bg-slate-800 rounded-2xl max-w-2xl w-full overflow-hidden">
-                <div class="relative">
+            <div class="bg-slate-800 rounded-2xl max-w-2xl w-full overflow-hidden max-h-[90vh] flex flex-col">
+                <div class="relative shrink-0">
                     <img :src="selected.backdrop_path" class="w-full h-48 object-cover" />
                     <button @click="selected = null"
                         class="absolute top-3 right-3 bg-black/50 text-white rounded-full w-8 h-8">✕</button>
                 </div>
-                <div class="p-6">
+                <div class="p-6 overflow-y-auto">
                     <h2 class="text-2xl font-bold text-white mb-1">{{ selected.title }}</h2>
                     <p class="text-slate-300 text-sm mb-6">{{ selected.overview }}</p>
 
@@ -196,11 +211,16 @@ function cancelAddForm() {
                                                     class="flex-1 bg-slate-900 text-white text-sm px-3 py-2 rounded-lg border border-slate-600 focus:border-blue-500 outline-none"
                                                     placeholder="Enter link" />
                                             </div>
-                                            <button v-if="editingLink !== p.id"
-                                                @click="startEditLink(p)"
-                                                class="bg-slate-700 hover:bg-slate-600 text-white px-3 py-2 rounded-lg text-xs transition">
-                                                Edit
-                                            </button>
+                                            <div v-if="editingLink !== p.id" class="flex gap-1">
+                                                <button @click="startEditLink(p)"
+                                                    class="bg-slate-700 hover:bg-slate-600 text-white px-3 py-2 rounded-lg text-xs transition">
+                                                    Edit
+                                                </button>
+                                                <button @click="deleteProvider(p)"
+                                                    class="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg text-xs transition">
+                                                    Delete
+                                                </button>
+                                            </div>
                                             <div v-else class="flex gap-1">
                                                 <button @click="saveLink(p)"
                                                     class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg text-xs transition">
