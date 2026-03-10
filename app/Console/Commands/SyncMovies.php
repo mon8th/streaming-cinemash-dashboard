@@ -58,16 +58,34 @@ class SyncMovies extends Command
                 );
                 $watchLink = $usData['link'] ?? null;
 
-                $movie->streamingProviders()->delete();
-                foreach ($flatrate as $p) {
-                    $movie->streamingProviders()->create([
+                            // REPLACE WITH THIS
+            $incomingIds = collect($flatrate)->pluck('provider_id')->toArray();
+
+            // Delete only providers that are no longer in TMDB response
+            $movie->streamingProviders()
+                ->whereIn('provider_id',
+                    $movie->streamingProviders()
+                        ->pluck('provider_id')
+                        ->diff($incomingIds)
+                        ->toArray()
+                )->delete();
+
+            foreach ($flatrate as $p) {
+                $existing = $movie->streamingProviders()
+                    ->where('provider_id', $p['provider_id'])
+                    ->where('type', $p['type'])
+                    ->first();
+
+                $movie->streamingProviders()->updateOrCreate(
+                    ['provider_id' => $p['provider_id'], 'type' => $p['type']],
+                    [
                         'provider_name' => $p['provider_name'],
-                        'provider_id'   => $p['provider_id'],
                         'logo_path'     => $p['logo_path'],
-                        'type'          => $p['type'],
                         'region'        => 'TH',
-                    ]);
-                }
+                        'link'          => $existing?->link ?? null, // preserve custom link
+                    ]
+                );
+            }
 
                     $videos = Http::timeout(10)->get("{$this->tmdbBase}/movie/{$tmdbId}/videos", [
                         'api_key' => $this->tmdbKey
