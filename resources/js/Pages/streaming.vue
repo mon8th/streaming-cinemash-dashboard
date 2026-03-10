@@ -47,10 +47,22 @@ function startEditLink(provider) {
 
 async function saveLink(provider) {
     try {
-        await axios.put(`/api/streaming-providers/${provider.id}`, {
+        const response = await axios.put(`/api/streaming-providers/${provider.id}`, {
             link: editLinkValue.value
         })
-        provider.link = editLinkValue.value
+
+        // Update in both places to ensure reactivity
+        provider.link = response.data.link
+
+        // Also update in the movies array
+        const movie = movies.value.find(m => m.id === selected.value.id)
+        if (movie) {
+            const providerInMovies = movie.streaming_providers.find(p => p.id === provider.id)
+            if (providerInMovies) {
+                providerInMovies.link = response.data.link
+            }
+        }
+
         editingLink.value = null
     } catch (error) {
         console.error('Failed to save link:', error)
