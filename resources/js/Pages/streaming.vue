@@ -47,22 +47,10 @@ function startEditLink(provider) {
 
 async function saveLink(provider) {
     try {
-        const response = await axios.put(`/api/streaming-providers/${provider.id}`, {
+        await axios.put(`/api/streaming-providers/${provider.id}`, {
             link: editLinkValue.value
         })
-
-        // Update in both places to ensure reactivity
-        provider.link = response.data.link
-
-        // Also update in the movies array
-        const movie = movies.value.find(m => m.id === selected.value.id)
-        if (movie) {
-            const providerInMovies = movie.streaming_providers.find(p => p.id === provider.id)
-            if (providerInMovies) {
-                providerInMovies.link = response.data.link
-            }
-        }
-
+        provider.link = editLinkValue.value
         editingLink.value = null
     } catch (error) {
         console.error('Failed to save link:', error)
@@ -130,7 +118,6 @@ async function deleteProvider(provider) {
             <div v-for="movie in movies" :key="movie.id"
                 class="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden cursor-pointer hover:border-slate-500 transition"
                 @click="selected = movie">
-                <img :src="movie.poster_path" :alt="movie.title" class="w-full object-cover" />
                 <div class="p-4">
                     <h2 class="text-white font-semibold text-sm mb-1">{{ movie.title }}</h2>
                 </div>
@@ -142,7 +129,6 @@ async function deleteProvider(provider) {
             @click.self="selected = null">
             <div class="bg-slate-800 rounded-2xl max-w-2xl w-full overflow-hidden max-h-[90vh] flex flex-col">
                 <div class="relative shrink-0">
-                    <img :src="selected.backdrop_path" class="w-full h-48 object-cover" />
                     <button @click="selected = null"
                         class="absolute top-3 right-3 bg-black/50 text-white rounded-full w-8 h-8">✕</button>
                 </div>
@@ -165,15 +151,13 @@ async function deleteProvider(provider) {
                             <div class="space-y-3">
                                 <div>
                                     <label class="text-xs text-slate-400 block mb-1">Provider Name</label>
-                                    <input v-model="newProvider.provider_name"
-                                        type="text"
+                                    <input v-model="newProvider.provider_name" type="text"
                                         class="w-full bg-slate-800 text-white text-sm px-3 py-2 rounded-lg border border-slate-600 focus:border-blue-500 outline-none"
                                         placeholder="e.g., Netflix, Hulu" />
                                 </div>
                                 <div>
                                     <label class="text-xs text-slate-400 block mb-1">Link</label>
-                                    <input v-model="newProvider.link"
-                                        type="text"
+                                    <input v-model="newProvider.link" type="text"
                                         class="w-full bg-slate-800 text-white text-sm px-3 py-2 rounded-lg border border-slate-600 focus:border-blue-500 outline-none"
                                         placeholder="https://..." />
                                 </div>
@@ -203,12 +187,12 @@ async function deleteProvider(provider) {
                             <div v-for="type in ['flatrate', 'rent', 'buy']" :key="type">
                                 <div v-if="selected.streaming_providers.filter(p => p.type === type).length"
                                     class="mb-3">
-                                    <div class="text-xs text-slate-500 mb-2 capitalize">{{ type === 'flatrate' ? 'Stream' : type }}</div>
+                                    <div class="text-xs text-slate-500 mb-2 capitalize">{{ type === 'flatrate' ?
+                                        'Stream' : type }}</div>
                                     <div class="flex flex-col gap-2">
                                         <div v-for="p in selected.streaming_providers.filter(p => p.type === type)"
                                             :key="p.id" class="flex items-center gap-2">
-                                            <a v-if="editingLink !== p.id"
-                                                :href="getPlatformLink(p, selected.title)"
+                                            <a v-if="editingLink !== p.id" :href="getPlatformLink(p, selected.title)"
                                                 target="_blank"
                                                 class="flex items-center gap-2 bg-slate-700 hover:bg-slate-600 rounded-lg px-3 py-2 transition flex-1">
                                                 <img :src="`https://image.tmdb.org/t/p/w45${p.logo_path}`"
@@ -218,8 +202,7 @@ async function deleteProvider(provider) {
                                             <div v-else class="flex items-center gap-2 flex-1">
                                                 <img :src="`https://image.tmdb.org/t/p/w45${p.logo_path}`"
                                                     class="w-6 h-6 rounded" />
-                                                <input v-model="editLinkValue"
-                                                    type="text"
+                                                <input v-model="editLinkValue" type="text"
                                                     class="flex-1 bg-slate-900 text-white text-sm px-3 py-2 rounded-lg border border-slate-600 focus:border-blue-500 outline-none"
                                                     placeholder="Enter link" />
                                             </div>

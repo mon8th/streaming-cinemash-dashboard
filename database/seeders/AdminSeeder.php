@@ -17,7 +17,7 @@ class AdminSeeder extends Seeder
             ['email' => 'admin@cinemash.com'],
             [
                 'name' => 'Admin',
-                'password' => Hash::make('cinemashadmin123'),
+                'password' => Hash::make('admin123'),
             ]
         );
     }

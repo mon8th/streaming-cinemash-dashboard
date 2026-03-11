@@ -9,20 +9,16 @@ class DashboardController extends Controller
 {
     public function index()
     {
-        $totalMovies = Movie::count();
+        $totalMovies   = Movie::count();
         $recentlyAdded = Movie::where('created_at', '>=', Carbon::now()->subDays(7))->count();
-        $topRated = Movie::where('vote_average', '>=', 8.0)->count();
-
-        $latestMovies = Movie::with('streamingProviders')
-            ->latest()
-            ->take(6)
-            ->get();
+        $withTrailer   = Movie::whereNotNull('trailer_url')->count();
+        $latestMovies  = Movie::with('streamingProviders')->latest()->take(6)->get();
 
         return Inertia::render('index', [
             'stats' => [
-                'totalMovies' => $totalMovies,
+                'totalMovies'   => $totalMovies,
                 'recentlyAdded' => $recentlyAdded,
-                'topRated' => $topRated,
+                'withTrailer'   => $withTrailer,
             ],
             'latestMovies' => $latestMovies,
         ]);

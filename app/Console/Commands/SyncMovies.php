@@ -8,7 +8,7 @@ use App\Models\Movie;
 class SyncMovies extends Command
 {
     protected $signature = 'movies:sync';
-    protected $description = 'Sync movies from Cinemesh + streaming providers from TMDB';
+    protected $description = 'Sync streaming providers and trailers from TMDB';
 
     protected $tmdbKey;
     protected $tmdbBase = 'https://api.themoviedb.org/3';
@@ -19,97 +19,98 @@ class SyncMovies extends Command
         $page = 1;
 
         do {
-            $baseUrl = rtrim(config('services.cinemesh_core.base_url'), '/');
+            $baseUrl = rtrim(env('CINEMESH_CORE_API'), '/');
             $res = Http::get($baseUrl . '/movies', [
-                'page' => $page,
-                'limit' => 100
+                'page'  => $page,
+                'limit' => 100,
             ])->json();
 
             foreach ($res['data'] as $m) {
-                $tmdbId = $this->searchTmdbId($m['Title'], $m['ReleaseDate']);
+                $title       = $m['Title'];
+                $releaseDate = $m['ReleaseDate'] ?? null;
+
+                $tmdbId = $m['tmdb_id'] ?? $this->searchTmdbId($title, $releaseDate);
 
                 if (!$tmdbId) {
-                    $this->warn(" No TMDB match: {$m['Title']}");
+                    $this->warn("  No TMDB match: {$title}");
                     continue;
                 }
 
-                $movie = Movie::updateOrCreate(
+                $movie = Movie::firstOrCreate(
                     ['tmdb_id' => $tmdbId],
-                    [
-                        'title'            => $m['Title'],
-                        'overview'         => $m['Synopsis'],
-                        'poster_path'      => $m['PosterURL'],
-                        'backdrop_path'    => $m['BackdropURL'],
-                        'release_date'     => $m['ReleaseDate'] ? date('Y-m-d', strtotime($m['ReleaseDate'])) : null,
-                        'vote_average'     => $m['AverageRating'],
-                        'genres'           => json_encode($m['Genres']),
-                    ]
+                    ['title'   => $title]
                 );
 
-                $providers = Http::get("{$this->tmdbBase}/movie/{$tmdbId}/watch/providers", [
-                    'api_key' => $this->tmdbKey
-                ])->json();
+                $this->syncProviders($movie, $tmdbId);
+                $this->syncTrailer($movie, $tmdbId);
 
-                $usData = $providers['results']['TH'] ?? [];
-                $flatrate = array_merge(
-                    array_map(fn($p) => array_merge($p, ['type' => 'flatrate']), $usData['flatrate'] ?? []),
-                    array_map(fn($p) => array_merge($p, ['type' => 'rent']), $usData['rent'] ?? []),
-                    array_map(fn($p) => array_merge($p, ['type' => 'buy']), $usData['buy'] ?? [])
-                );
-                $watchLink = $usData['link'] ?? null;
-
-                            // REPLACE WITH THIS
-            $incomingIds = collect($flatrate)->pluck('provider_id')->toArray();
-
-            // Delete only providers that are no longer in TMDB response
-            $movie->streamingProviders()
-                ->whereIn('provider_id',
-                    $movie->streamingProviders()
-                        ->pluck('provider_id')
-                        ->diff($incomingIds)
-                        ->toArray()
-                )->delete();
-
-            foreach ($flatrate as $p) {
-                $existing = $movie->streamingProviders()
-                    ->where('provider_id', $p['provider_id'])
-                    ->where('type', $p['type'])
-                    ->first();
-
-                $movie->streamingProviders()->updateOrCreate(
-                    ['provider_id' => $p['provider_id'], 'type' => $p['type']],
-                    [
-                        'provider_name' => $p['provider_name'],
-                        'logo_path'     => $p['logo_path'],
-                        'region'        => 'TH',
-                        'link'          => $existing?->link ?? null, // preserve custom link
-                    ]
-                );
-            }
-
-                    $videos = Http::timeout(10)->get("{$this->tmdbBase}/movie/{$tmdbId}/videos", [
-                        'api_key' => $this->tmdbKey
-                    ])->json();
-
-                    $trailer = collect($videos['results'] ?? [])
-                        ->first(fn($v) => $v['type'] === 'Trailer' && $v['site'] === 'YouTube');
-
-                    $movie->update([
-                        'trailer_url' => $trailer ? 'https://www.youtube.com/watch?v=' . $trailer['key'] : null,
-                        'watch_link'  => $watchLink
-                    ]);
-
-                $this->info("✓ {$m['Title']} (TMDB: $tmdbId, providers: " . count($flatrate) . ")");
+                $this->info("✓ {$title} (TMDB: {$tmdbId})");
                 sleep(1);
             }
 
             $page++;
-        } while ($page <= $res['pagination']['totalPages']);
+        } while ($page <= ($res['pagination']['totalPages'] ?? 1));
 
         $this->info('Done!');
     }
 
-    private function searchTmdbId($title, $releaseDate)
+    private function syncProviders(Movie $movie, int $tmdbId): void
+    {
+        $res     = Http::get("{$this->tmdbBase}/movie/{$tmdbId}/watch/providers", [
+            'api_key' => $this->tmdbKey,
+        ])->json();
+
+        $thData  = $res['results']['SG'] ?? [];
+        $watchLink = $thData['link'] ?? null;
+
+        $incoming = array_merge(
+            array_map(fn($p) => array_merge($p, ['type' => 'flatrate']), $thData['flatrate'] ?? []),
+            array_map(fn($p) => array_merge($p, ['type' => 'rent']),     $thData['rent']     ?? []),
+            array_map(fn($p) => array_merge($p, ['type' => 'buy']),      $thData['buy']      ?? []),
+        );
+
+        $incomingIds = collect($incoming)->pluck('provider_id')->toArray();
+
+        // Remove providers TMDB no longer returns
+        $movie->streamingProviders()
+            ->whereNotIn('provider_id', $incomingIds)
+            ->delete();
+
+        foreach ($incoming as $p) {
+            $movie->streamingProviders()->updateOrCreate(
+                ['provider_id' => $p['provider_id'], 'type' => $p['type']],
+                [
+                    'provider_name' => $p['provider_name'],
+                    'logo_path'     => $p['logo_path'],
+                    'region'        => 'TH',
+                    'link'          => $movie->streamingProviders()
+                        ->where('provider_id', $p['provider_id'])
+                        ->where('type', $p['type'])
+                        ->value('link'), // preserve custom link if set
+                ]
+            );
+        }
+
+        $movie->update(['watch_link' => $watchLink]);
+    }
+
+    private function syncTrailer(Movie $movie, int $tmdbId): void
+    {
+        $res = Http::timeout(10)->get("{$this->tmdbBase}/movie/{$tmdbId}/videos", [
+            'api_key' => $this->tmdbKey,
+        ])->json();
+
+        $trailer = collect($res['results'] ?? [])
+            ->first(fn($v) => $v['type'] === 'Trailer' && $v['site'] === 'YouTube');
+
+        $movie->update([
+            'trailer_url' => $trailer
+                ? 'https://www.youtube.com/watch?v=' . $trailer['key']
+                : null,
+        ]);
+    }
+
+    private function searchTmdbId(string $title, ?string $releaseDate): ?int
     {
         $year = $releaseDate ? date('Y', strtotime($releaseDate)) : null;
 

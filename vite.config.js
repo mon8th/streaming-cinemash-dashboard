@@ -16,5 +16,12 @@ export default defineConfig({
         watch: {
             ignored: ['**/storage/framework/views/**'],
         },
+        proxy: {
+            '/cinemash-core': {
+                target: 'http://47.129.2.187',
+                changeOrigin: true,
+                rewrite: (path) => path.replace(/^\/cinemash-core/, '/api/public'),
+            },
+        },
     },
 });

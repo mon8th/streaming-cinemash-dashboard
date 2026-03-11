@@ -19,6 +19,7 @@ return new class extends Migration
             $table->string('logo_path')->nullable();
             $table->string('type');
             $table->string('region', 2);
+            $table->string('link')->nullable();
             $table->timestamps();
         });
     }

@@ -28,10 +28,9 @@ defineProps({
         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             <div v-for="movie in latestMovies" :key="movie.id"
                 class="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
-                <img :src="movie.poster_path" :alt="movie.title" class="w-full aspect-2/3 object-cover" />
+
                 <div class="p-3">
                     <h3 class="text-white font-semibold text-xs mb-1 truncate">{{ movie.title }}</h3>
-                    <div class="text-slate-400 text-xs">⭐ {{ movie.vote_average }}</div>
                 </div>
             </div>
         </div>
